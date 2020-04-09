@@ -1,8 +1,6 @@
 Qaintessent.jl
 ==============
 
-![](https://github.com/Qaintum/Qaintellect.jl/workflows/Run%20tests/badge.svg)
-
 Qaintellect.jl is an extension to Qaintessent.jl that supports integration with Flux
 
 # Installation
