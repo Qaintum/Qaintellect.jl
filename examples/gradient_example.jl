@@ -5,7 +5,6 @@ Pkg.instantiate()
 
 @info("Loading Qaintessent, Qaintellect, Flux...")
 using Qaintessent, Qaintellect, Flux, Zygote, LinearAlgebra
-using Flux.Optimise: update!
 
 # construct parametrized circuit
 N = 4

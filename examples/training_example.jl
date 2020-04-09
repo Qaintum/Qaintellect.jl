@@ -3,8 +3,8 @@ import Pkg
 Pkg.activate("../")
 Pkg.instantiate()
 
-@info("Loading Qaintessent, Flux...")
-using Qaintessent, Flux, Zygote, LinearAlgebra
+@info("Loading Qaintessent, Qaintellect, Flux...")
+using Qaintessent, Qaintellect, Flux, Zygote, LinearAlgebra
 using Flux.Optimise: update!
 using IterTools: ncycle
 
