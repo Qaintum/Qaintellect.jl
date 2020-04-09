@@ -1,9 +1,9 @@
-Qaintessent.jl
+Qaintellect.jl
 ==============
 
 Qaintellect.jl is an extension to Qaintessent.jl that supports integration with Flux
 
-# Installation
+## Installation
 As Qaintessent.jl is not yet a registered Julia repository, please run the following commands in the Qaintellect.jl main folder to install it as a dependency
 ```
 julia> ]
