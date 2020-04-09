@@ -80,3 +80,4 @@ end
 end
 
 Flux.trainable(c::Circuit) = get_trainable(c::Circuit)
+(c::Circuit)(ψ) = Qaintessent.apply(c, ψ)
