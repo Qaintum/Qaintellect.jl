@@ -2,7 +2,8 @@ using Test
 using TestSetExtensions
 using LinearAlgebra
 using Qaintessent
-
+using Qaintellect
+using Zygote
 
 # from https://github.com/FluxML/Zygote.jl/blob/master/test/gradcheck.jl
 function ngradient(f, xs::AbstractArray...)
@@ -40,16 +41,26 @@ end
         single_qubit_circuit_gate(1, ry, N),
     ])
     meas = MeasurementOps{N}([Matrix{Float64}(I, 2^N, 2^N), Hermitian(randn(ComplexF64, 2^N, 2^N))])
-
     # input quantum state
     ψ = randn(ComplexF64, 2^N)
 
     # fictitious gradients of cost function with respect to circuit output
     Δ = [0.3, -1.2]
 
+    # Gradient calculation using Qaintessent internals
     grads = Qaintessent.gradients(Circuit(cgc, meas), ψ, Δ)
+
+    # Gradient calculation using Zygote
+    gs = gradient(Params([rz.θ, ps.ϕ, rg.nθ, ry.θ])) do
+        ψs = apply(Circuit(cgc, meas), ψ)
+        dot(Δ, ψs)
+    end
+
     # arguments used implicitly via references
     f(args...) = dot(Δ, apply(Circuit(cgc, meas), ψ))
     @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+        (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+
+    @test all(isapprox.((gs[rz.θ], gs[ps.ϕ], gs[ry.θ], gs[rg.nθ]),
         (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
 end
