@@ -16,10 +16,6 @@ Flux.@functor CircuitGateChain
 Flux.@functor MeasurementOps
 Flux.@functor Circuit
 
-
-(c::Circuit)(ψ) = apply(c, ψ)
-
-
 function collect_gradients(cx::Zygote.Context, q, dq)
     # special cases: circuit gate chain
     # TODO: also support measurement operators
