@@ -13,13 +13,14 @@ Flux.@functor ControlledGate
 
 Flux.@functor CircuitGate
 Flux.@functor CircuitGateChain
+Flux.@functor Moment
 Flux.@functor MeasurementOps
 Flux.@functor Circuit
 
 function collect_gradients(cx::Zygote.Context, q, dq)
     # special cases: circuit gate chain
     # TODO: also support measurement operators
-    if typeof(q) <: AbstractVector{<:AbstractCircuitGate}
+    if typeof(q) <: AbstractVector{<:AbstractCircuitGate} || typeof(q) <: AbstractVector{<:Moment}
         for i in 1:length(q)
             collect_gradients(cx, q[i], dq[i])
         end
