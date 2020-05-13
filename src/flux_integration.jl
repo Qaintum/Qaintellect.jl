@@ -28,7 +28,10 @@ function collect_gradients(cx::Zygote.Context, q, dq)
         # need to explicitly "accumulate parameters" for Flux Params([...]) to work
         Zygote.accum_param(cx, q, dq)
         for f in fieldnames(typeof(q))
-            collect_gradients(cx, getfield(q, f), getfield(dq, f))
+            try
+                collect_gradients(cx, getfield(q, f), getfield(dq, f))
+            catch UndefRefError
+            end
         end
     end
 end
