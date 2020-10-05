@@ -43,7 +43,7 @@ end
     rg = RotationGate(0.2π, n)
     cgc = CircuitGateChain{N}([
         single_qubit_circuit_gate(3, HadamardGate(), N),
-        controlled_circuit_gate((1, 4), 2, rz, N),
+        controlled_circuit_gate(2, (1, 4), rz, N),
         two_qubit_circuit_gate(2, 3, SwapGate(), N),
         single_qubit_circuit_gate(3, ps, N),
         single_qubit_circuit_gate(3, rg, N),
