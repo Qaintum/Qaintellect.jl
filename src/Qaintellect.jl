@@ -28,8 +28,12 @@ export
     RotationGate,
     PhaseShiftGate,
     SwapGate,
+    EntanglementXXGate,
+    EntanglementYYGate,
+    EntanglementZZGate,
     ControlledGate,
-    controlled_not
+    controlled_not,
+    MatrixGate
 
 # circuit
 export
@@ -40,11 +44,25 @@ export
     single_qubit_circuit_gate,
     two_qubit_circuit_gate,
     controlled_circuit_gate,
-    apply,
     rdm,
     CircuitGateChain,
     MeasurementOps,
-    Circuit
+    Circuit,
+    distribution
+
+# density_matrix
+export
+    DensityMatrix,
+    pauli_group_matrix,
+    density_from_statevector
+
+# commute
+export
+    iscommuting
+
+# apply
+export
+    apply
 
 # models
 export

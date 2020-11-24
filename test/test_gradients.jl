@@ -56,13 +56,39 @@ end
     # input quantum state
     ψ = randn(ComplexF64, 2^N)
 
-    # fictitious gradients of cost function with respect to circuit output
-    Δ = [0.3, -1.2]
+    @testset "circuit gate chain gradients" begin
+        # fictitious gradients of cost function with respect to circuit gate chain output
+        Δ = 0.1*randn(ComplexF64, 2^N)
 
-    grads = Flux.gradient(() -> dot(Δ, apply(c, ψ)), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+        # Flux will call pullback function with argument Δ
+        grads = Flux.gradient(() -> real(dot(Δ, apply(cgc, ψ))), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
 
-    # arguments used implicitly via references
-    f(args...) = dot(Δ, apply(c, ψ))
-    @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
-        (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+        # arguments used implicitly via references; factor 2 due to convention for Wirtinger derivative with prefactor 1/2
+        f(args...) = 2*real(dot(Δ, apply(cgc, ψ)))
+        @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+            (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+    end
+
+    @testset "circuit gate chain gradients 2" begin
+        Δ = 0.1*randn(Float64, 2^N)
+
+        grads = Flux.gradient(() -> dot(Δ, abs2.(apply(cgc, ψ))), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+
+        # arguments used implicitly via references; factor 2 due to convention for Wirtinger derivative with prefactor 1/2
+        f(args...) = 2*dot(Δ, abs2.(apply(cgc, ψ)))
+        @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+            (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+    end
+
+    @testset "circuit with measurement gradients" begin
+        # fictitious gradients of cost function with respect to circuit output
+        Δ = [0.3, -1.2]
+
+        grads = Flux.gradient(() -> dot(Δ, apply(c, ψ)), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+
+        # arguments used implicitly via references
+        f(args...) = dot(Δ, apply(c, ψ))
+        @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+            (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+    end
 end

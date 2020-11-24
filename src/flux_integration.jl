@@ -9,6 +9,10 @@ Flux.@functor RotationGate
 
 Flux.@functor PhaseShiftGate
 
+Flux.@functor EntanglementXXGate
+Flux.@functor EntanglementYYGate
+Flux.@functor EntanglementZZGate
+
 Flux.@functor ControlledGate
 
 Flux.@functor CircuitGate
@@ -33,6 +37,18 @@ function collect_gradients(cx::Zygote.Context, q, dq)
             catch UndefRefError
             end
         end
+    end
+end
+
+
+# custom adjoint
+Zygote.@adjoint apply(cgc::CircuitGateChain{N}, ψ::AbstractVector{<:Complex}) where {N} = begin
+    ψ1 = apply(cgc, ψ)
+    ψ1, function(Δ)
+        # backward pass through unitary gates
+        dcgc, ψbar = Qaintessent.backward(cgc, ψ1, Δ)
+        collect_gradients(__context__, cgc, dcgc)
+        return (dcgc, ψbar)
     end
 end
 
