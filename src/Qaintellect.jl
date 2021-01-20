@@ -8,7 +8,7 @@ include("flux_integration.jl")
 
 # re-export definitions from Qaintessent.jl
 
-# gates
+# gates.jl
 export
     AbstractGate,
     X,
@@ -33,39 +33,42 @@ export
     EntanglementZZGate,
     ControlledGate,
     controlled_not,
-    MatrixGate
+    MatrixGate,
+    matrix,
+    sparse_matrix,
+    num_wires
 
-# circuit
+# circuitgate.jl
 export
     AbstractCircuitGate,
     CircuitGate,
-    AbstractMoment,
+    circuit_gate
+
+# circuit.jl
+export
     Moment,
     single_qubit_circuit_gate,
     two_qubit_circuit_gate,
     controlled_circuit_gate,
-    rdm,
-    CircuitGateChain,
-    MeasurementOps,
+    circuit_gate,
+    MeasurementOperator,
     Circuit,
-    distribution
+    distribution,
+    rdm
 
-# density_matrix
+# density_matrix.jl
 export
     DensityMatrix,
     pauli_group_matrix,
-    density_from_statevector
+    density_from_statevector,
+    density_from_matrix
 
-# commute
+# commute.jl
 export
     iscommuting
 
-# apply
+# apply.jl
 export
     apply
-
-# models
-export
-    qft_circuit
 
 end

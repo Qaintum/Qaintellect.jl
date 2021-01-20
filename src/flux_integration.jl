@@ -4,22 +4,17 @@
 Flux.@functor RxGate
 Flux.@functor RyGate
 Flux.@functor RzGate
-
 Flux.@functor RotationGate
-
 Flux.@functor PhaseShiftGate
-
+Flux.@functor ControlledGate
 Flux.@functor EntanglementXXGate
 Flux.@functor EntanglementYYGate
 Flux.@functor EntanglementZZGate
-
-Flux.@functor ControlledGate
-
 Flux.@functor CircuitGate
-Flux.@functor CircuitGateChain
 Flux.@functor Moment
-Flux.@functor MeasurementOps
+Flux.@functor MeasurementOperator
 Flux.@functor Circuit
+
 
 function collect_gradients(cx::Zygote.Context, q, dq)
     # special cases: circuit gate chain
@@ -42,13 +37,16 @@ end
 
 
 # custom adjoint
-Zygote.@adjoint apply(cgc::CircuitGateChain{N}, ψ::AbstractVector{<:Complex}) where {N} = begin
-    ψ1 = apply(cgc, ψ)
+Zygote.@adjoint apply(moments::Vector{Moment}, ψ::Vector{<:Complex}) = begin
+    N = Qaintessent.intlog2(length(ψ))
+    length(ψ) == 2^N || error("Vector length must be a power of 2")
+    ψ1 = apply(moments, ψ)
     ψ1, function(Δ)
-        # backward pass through unitary gates
-        dcgc, ψbar = Qaintessent.backward(cgc, ψ1, Δ)
-        collect_gradients(__context__, cgc, dcgc)
-        return (dcgc, ψbar)
+        # factor 1/2 due to convention for Wirtinger derivative with prefactor 1/2
+        dmoments, ψbar = Qaintessent.backward(moments, ψ1, 0.5*Δ, N)
+        ψbar .*= 2.0
+        collect_gradients(__context__, moments, dmoments)
+        return (dmoments, ψbar)
     end
 end
 
