@@ -41,28 +41,54 @@ end
     n = randn(Float64, 3)
     n /= norm(n)
     rg = RotationGate(0.2π, n)
-    cgc = CircuitGateChain{N}([
-        single_qubit_circuit_gate(3, HadamardGate(), N),
-        controlled_circuit_gate(2, (1, 4), rz, N),
-        two_qubit_circuit_gate(2, 3, SwapGate(), N),
-        single_qubit_circuit_gate(3, ps, N),
-        single_qubit_circuit_gate(3, rg, N),
-        single_qubit_circuit_gate(1, ry, N),
-    ])
+    cgc = [
+        circuit_gate(3, HadamardGate()),
+        circuit_gate(2, rz, (1, 4)),
+        circuit_gate(2, 3, SwapGate()),
+        circuit_gate(3, ps),
+        circuit_gate(3, rg),
+        circuit_gate(1, ry),
+    ]
     # measurement operators
-    meas = MeasurementOps{N}([Matrix{Float64}(I, 2^N, 2^N), Hermitian(randn(ComplexF64, 2^N, 2^N))])
-    c = Circuit(cgc, meas)
+    meas = [MeasurementOperator(Matrix{Float64}(I, 2^N, 2^N), Tuple(1:N)), MeasurementOperator(Hermitian(randn(ComplexF64, 2^N, 2^N)), Tuple(1:N))]
+    c = Circuit{N}(cgc, meas)
 
     # input quantum state
     ψ = randn(ComplexF64, 2^N)
 
-    # fictitious gradients of cost function with respect to circuit output
-    Δ = [0.3, -1.2]
+    @testset "circuit gate chain gradients" begin
+        # fictitious gradients of cost function with respect to output quantum state after applying circuit gates
+        Δ = 0.1*randn(ComplexF64, 2^N)
 
-    grads = Flux.gradient(() -> dot(Δ, apply(c, ψ)), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+        # Flux will call pullback function with argument Δ
+        grads = Flux.gradient(() -> real(dot(Δ, apply(c.moments, ψ))), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
 
-    # arguments used implicitly via references
-    f(args...) = dot(Δ, apply(c, ψ))
-    @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
-        (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+        # arguments used implicitly via references
+        f(args...) = real(dot(Δ, apply(c.moments, ψ)))
+        @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+            (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+    end
+
+    @testset "circuit gate chain gradients 2" begin
+        Δ = 0.1*randn(Float64, 2^N)
+
+        grads = Flux.gradient(() -> dot(Δ, abs2.(apply(c.moments, ψ))), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+
+        # arguments used implicitly via references; factor 2 due to convention for Wirtinger derivative with prefactor 1/2
+        f(args...) = dot(Δ, abs2.(apply(c.moments, ψ)))
+        @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+            (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+    end
+
+    @testset "circuit with measurement gradients" begin
+        # fictitious gradients of cost function with respect to circuit output
+        Δ = [0.3, -1.2]
+
+        grads = Flux.gradient(() -> dot(Δ, apply(c, ψ)), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+
+        # arguments used implicitly via references
+        f(args...) = dot(Δ, apply(c, ψ))
+        @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+            (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+    end
 end
