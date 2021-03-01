@@ -9,5 +9,4 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@latest
-      - run: julia --project test/installQaintessent.jl
       - uses: julia-actions/julia-runtest@master
