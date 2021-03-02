@@ -60,3 +60,30 @@ Zygote.@adjoint apply(c::Circuit{N}, ψ::AbstractVector) where {N} = begin
         return (dc, ψbar)
     end
 end
+
+
+# custom adjoint for applying moments to a density matrix
+Zygote.@adjoint apply(moments::Vector{Moment}, ρ::DensityMatrix) = begin
+    ρ1 = apply(moments, ρ)
+    ρ1, function(Δ)
+        dmoments, ρbar = Qaintessent.backward(moments, ρ1, Δ, N)
+        collect_gradients(__context__, moments, dmoments)
+        return (dmoments, ρbar)
+    end
+end
+
+
+# custom adjoint for applying a circuit to a density matrix
+Zygote.@adjoint apply(c::Circuit{N}, ρ::DensityMatrix) where {N} = begin
+    @assert(ρ.N == N)
+    apply(c, ρ), function(Δ)
+        # TODO: don't recompute apply(c, ρ) here
+        dc, ρbar = Qaintessent.gradients(c, ρ, Δ)
+        collect_gradients(__context__, c, dc)
+        return (dc, ρbar)
+    end
+end
+
+
+# custom adjoint for DensityMatrix constructor; setting gradient with respect to integer `N` to zero. 
+Zygote.@adjoint DensityMatrix(v::AbstractVector{<:Real}, N::Integer) = DensityMatrix(v, N), ρbar -> (ρbar.v, 0)
