@@ -7,7 +7,8 @@ makedocs(
         "Home" => "index.md",
         "Section" => [
             "flux_integration.md",
-            "qaoa.md"
+            "qaoa.md",
+            "optimization.md"
         ]
     ]
 )

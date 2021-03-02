@@ -9,7 +9,7 @@ end
 
 #### Example
 
-```@eval
+```@example
 using Qaintessent
 using Qaintellect
 using LinearAlgebra
@@ -47,7 +47,7 @@ Cmatrix = zeros(2^n, 2^n)
 for edge in edges
     k1 = circuit_gate(edge[1] + 1, ZGate())
     k2 = circuit_gate(edge[2] + 1, ZGate())
-    Cmatrix += 0.5*(I - sparse_matrix([k1, k2], n))
+    global Cmatrix += 0.5*(I - sparse_matrix([k1, k2], n))
 end
 
 Cop = MeasurementOperator(Cmatrix, Tuple(1:n));

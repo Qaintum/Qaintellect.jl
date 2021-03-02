@@ -2,7 +2,7 @@
 
 ## Table of Contents
 ```@contents
-Pages = ["index.md", "flux_integration.md", "qaoa.md"]
+Pages = ["index.md", "flux_integration.md", "qaoa.md", "optimization.md"]
 ```
 
 ```@meta
