@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>QAOA Example · Qaintellect.jl Documentation</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Qaintellect.jl Documentation</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><span class="tocitem">Section</span><ul><li><a class="tocitem" href="../flux_integration/">Flux Integration</a></li><li class="is-active"><a class="tocitem" href>QAOA Example</a></li><li><a class="tocitem" href="../optimization/">Sample Flux Layer</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Section</a></li><li class="is-active"><a href>QAOA Example</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>QAOA Example</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/Qaintum/Qaintellect.jl/blob/master/doc/src/qaoa.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="QAOA-Example"><a class="docs-heading-anchor" href="#QAOA-Example">QAOA Example</a><a id="QAOA-Example-1"></a><a class="docs-heading-anchor-permalink" href="#QAOA-Example" title="Permalink"></a></h1><p>This examples runs a simple Max-Cut algorithm.</p><h4 id="Example"><a class="docs-heading-anchor" href="#Example">Example</a><a id="Example-1"></a><a class="docs-heading-anchor-permalink" href="#Example" title="Permalink"></a></h4><pre><code class="language-">using Qaintessent
+using Qaintellect
+using LinearAlgebra
+using Flux
+using IterTools: ncycle
+# visualization
+using Plots
+using LaTeXStrings
+
+# number of vertices
+n = 5
+
+# graph edges corresponding to the above graph
+edges = [(0, 1), (1, 2), (1, 3), (2, 4), (3, 4)];
+
+# generates QAOA layers
+function qaoa_layers(p::Int, n::Int, edges::Vector{Tuple{Int,Int}})
+    cgs = CircuitGate[]
+    for _ in 1:p
+        # C operator
+        for e in edges
+            # circuit gate uses 1-based indexing
+            push!(cgs, circuit_gate(e[1] + 1, e[2] + 1, EntanglementZZGate(0.01*randn())))
+        end
+        # B operator
+        for j in 1:n
+           push!(cgs, circuit_gate(j, RxGate(0.01*randn())))
+        end
+    end
+    return cgs
+end
+
+# create measurement operator representing C
+Cmatrix = zeros(2^n, 2^n)
+for edge in edges
+    k1 = circuit_gate(edge[1] + 1, ZGate())
+    k2 = circuit_gate(edge[2] + 1, ZGate())
+    global Cmatrix += 0.5*(I - sparse_matrix([k1, k2], n))
+end
+
+Cop = MeasurementOperator(Cmatrix, Tuple(1:n));
+
+# example
+circ = Circuit{n}(qaoa_layers(2, n, edges), [Cop])
+
+# gather parameters from circuit
+paras = Flux.params(circ)
+
+# there is not actually any input data for training
+data = ncycle([()], 500)
+
+# define optimizer
+opt = Descent(0.5)
+
+# create equal superposition state
+s_uni = fill(1/√(2^n) + 0.0im, 2^n);
+
+# define evaluation function
+evalcb() = @show(apply(circ, s_uni))
+
+# perform minimization with the negated target function to achieve maximization
+Flux.train!(() -&gt; -apply(circ, s_uni)[1], paras, data, opt, cb=Flux.throttle(evalcb, 0.5));
+
+# corresponding optimized quantum wavefunction
+ψ1 = apply(circ.moments, s_uni)
+
+tags = [join(reverse(digits(i, pad=n, base=2))) for i in 0:2^n-1];
+bar(tags, abs2.(ψ1), xticks=:all, xrotation=45, ylabel=L&quot;|\psi|^2&quot;, legend=false);</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../flux_integration/">« Flux Integration</a><a class="docs-footer-nextpage" href="../optimization/">Sample Flux Layer »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 2 March 2021 09:55">Tuesday 2 March 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

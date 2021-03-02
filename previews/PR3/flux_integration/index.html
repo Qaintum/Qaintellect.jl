@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Flux Integration · Qaintellect.jl Documentation</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Qaintellect.jl Documentation</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><span class="tocitem">Section</span><ul><li class="is-active"><a class="tocitem" href>Flux Integration</a></li><li><a class="tocitem" href="../qaoa/">QAOA Example</a></li><li><a class="tocitem" href="../optimization/">Sample Flux Layer</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Section</a></li><li class="is-active"><a href>Flux Integration</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Flux Integration</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/Qaintum/Qaintellect.jl/blob/master/doc/src/flux_integration.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Flux-Integration"><a class="docs-heading-anchor" href="#Flux-Integration">Flux Integration</a><a id="Flux-Integration-1"></a><a class="docs-heading-anchor-permalink" href="#Flux-Integration" title="Permalink"></a></h1><p>Qaintellect.jl integrates the various utilities of Qaintessent.jl into Flux.jl. This allows the creation of trainable layers, which can integrated into ML or optimization algorithms.</p><h4 id="Example"><a class="docs-heading-anchor" href="#Example">Example</a><a id="Example-1"></a><a class="docs-heading-anchor-permalink" href="#Example" title="Permalink"></a></h4><p>This example shows test code that uses the <code>Flux.gradient()</code> call to calculate the gradients of the <code>Circuit</code> object.</p><pre><code class="language-julia">using Flux
+using Qaintessent
+using Qaintellect
+using LinearAlgebra
+
+# construct parametrized circuit
+N = 4
+rz = RzGate(1.5π)
+ps = PhaseShiftGate(0.3)
+ry = RyGate(√2)
+n = randn(Float64, 3)
+n /= norm(n)
+rg = RotationGate(0.2π, n)
+cgc = [
+    circuit_gate(3, HadamardGate()),
+    circuit_gate(2, rz, (1, 4)),
+    circuit_gate(2, 3, SwapGate()),
+    circuit_gate(3, ps),
+    circuit_gate(3, rg),
+    circuit_gate(1, ry),
+]
+
+# measurement operators
+meas = [MeasurementOperator(Matrix{Float64}(I, 2^N, 2^N), Tuple(1:N)), MeasurementOperator(Hermitian(randn(ComplexF64, 2^N, 2^N)), Tuple(1:N))]
+c = Circuit{N}(cgc, meas)
+
+# input quantum state
+ψ = randn(ComplexF64, 2^N)
+
+# fictitious gradients of cost function with respect to output quantum state after applying circuit gates
+Δ = 0.1*randn(ComplexF64, 2^N)
+
+# Flux will call pullback function with argument Δ
+grads = Flux.gradient(() -&gt; real(dot(Δ, apply(c.moments, ψ))), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+
+# arguments used implicitly via references
+# ngradient calculates gradients via finite difference, adapted from https://github.com/FluxML/Zygote.jl/blob/master/test/gradcheck.jl 
+f(args...) = real(dot(Δ, apply(c.moments, ψ)))
+all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+    (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+
+# output
+true</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../qaoa/">QAOA Example »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 2 March 2021 09:55">Tuesday 2 March 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
