@@ -91,4 +91,17 @@ end
         @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
             (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
     end
+
+    @testset "circuit with measurement gradients" begin
+        # fictitious gradients of cost function with respect to circuit output
+        Δ = [0.3, -1.2]
+        ρ = density_from_statevector(ψ)
+
+        grads = Flux.gradient(() -> dot(Δ, apply(c, ρ)), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+
+        # arguments used implicitly via references
+        f(args...) = dot(Δ, apply(c, ρ))
+        @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+            (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+    end
 end
