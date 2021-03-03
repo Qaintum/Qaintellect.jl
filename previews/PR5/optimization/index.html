@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Sample Flux Layer · Qaintellect.jl Documentation</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Qaintellect.jl Documentation</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><span class="tocitem">Section</span><ul><li><a class="tocitem" href="../flux_integration/">Flux Integration</a></li><li><a class="tocitem" href="../qaoa/">QAOA Example</a></li><li class="is-active"><a class="tocitem" href>Sample Flux Layer</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Section</a></li><li class="is-active"><a href>Sample Flux Layer</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Sample Flux Layer</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/Qaintum/Qaintellect.jl/blob/master/doc/src/optimization.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Sample-Flux-Layer"><a class="docs-heading-anchor" href="#Sample-Flux-Layer">Sample Flux Layer</a><a id="Sample-Flux-Layer-1"></a><a class="docs-heading-anchor-permalink" href="#Sample-Flux-Layer" title="Permalink"></a></h1><p>This example demonstrates the creation of a sample Flux layer.</p><h4 id="Example"><a class="docs-heading-anchor" href="#Example">Example</a><a id="Example-1"></a><a class="docs-heading-anchor-permalink" href="#Example" title="Permalink"></a></h4><p>This example shows test code that uses the <code>Flux.gradient()</code> call to calculate the gradients of the <code>Circuit</code> object.</p><pre><code class="language-">using Flux
+using Qaintessent
+using Qaintellect
+using LinearAlgebra
+using IterTools: ncycle
+
+# construct parametrized circuit
+rx = RxGate(2π*rand())
+ry = RyGate(2π*rand())
+
+cgc = [
+    circuit_gate(1, rx),
+    circuit_gate(1, ry),
+]
+
+# using Pauli-Z matrix as observable
+meas = [MeasurementOperator([1 0; 0 -1], (1,))]
+
+c = Circuit{1}(cgc, meas)
+
+# We set the initial input as the $\lvert 0 \rangle$ state, and the target expectation value of the measurement as $-1$.
+ψ = ComplexF64[1, 0]
+e = -1
+
+# create loss function: note that circuit `c` is applied to `x`
+loss(x, y) = Flux.mse(c(x), y)
+
+# gather parameters from Circuit
+paras = Flux.params(c)
+@show(paras)
+
+# define optimizer
+opt = ADAM(0.5)
+
+# set up data for training; using `ncycle()` to repeatedly feed the input quantum state into the training algorithm
+data = ncycle([(ψ, e)], 128)
+
+# define evaluation function
+evalcb() = @show(loss(ψ, e))
+
+# example: compute gradients
+grads = gradient(() -&gt; loss(ψ, e), paras)
+grads[ry.θ]
+
+Flux.train!(loss, paras, data, opt, cb=Flux.throttle(evalcb, 0.01))
+
+# verify output
+@show apply(c, ψ)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../qaoa/">« QAOA Example</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Wednesday 3 March 2021 13:02">Wednesday 3 March 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
