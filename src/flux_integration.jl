@@ -66,7 +66,10 @@ end
 Zygote.@adjoint apply(moments::Vector{Moment}, ρ::DensityMatrix) = begin
     ρ1 = apply(moments, ρ)
     ρ1, function(Δ)
-        dmoments, ρbar = Qaintessent.backward(moments, ρ1, Δ, N)
+        if !(Δ isa DensityMatrix)
+            Δ = DensityMatrix(Δ[1], ρ.N)
+        end
+        dmoments, ρbar = Qaintessent.backward_density(moments, ρ1, Δ)
         collect_gradients(__context__, moments, dmoments)
         return (dmoments, ρbar)
     end

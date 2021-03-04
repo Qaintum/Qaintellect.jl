@@ -1,9 +1,6 @@
-name = "Qaintellect"
-uuid = "0a7fc590-1c99-4bf9-b5a7-8c116fa99d16"
-authors = ["Keefe Huang <huangq1234553@gmail.com>"]
-version = "0.1.0"
-
 [deps]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+TestSetExtensions = "98d24dd4-01ad-11ea-1b02-c9a08f80db04"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
