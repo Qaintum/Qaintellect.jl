@@ -61,10 +61,10 @@ end
         Δ = 0.1*randn(ComplexF64, 2^N)
 
         # Flux will call pullback function with argument Δ
-        grads = Flux.gradient(() -> real(dot(Δ, apply(c.moments, ψ))), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+        grads = Flux.gradient(() -> real(dot(Δ, apply(ψ, c.moments))), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
 
         # arguments used implicitly via references
-        f(args...) = real(dot(Δ, apply(c.moments, ψ)))
+        f(args...) = real(dot(Δ, apply(ψ, c.moments)))
         @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
             (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
     end
@@ -72,10 +72,10 @@ end
     @testset "circuit gate chain gradients 2" begin
         Δ = 0.1*randn(Float64, 2^N)
 
-        grads = Flux.gradient(() -> dot(Δ, abs2.(apply(c.moments, ψ))), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+        grads = Flux.gradient(() -> dot(Δ, abs2.(apply(ψ, c.moments))), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
 
         # arguments used implicitly via references; factor 2 due to convention for Wirtinger derivative with prefactor 1/2
-        f(args...) = dot(Δ, abs2.(apply(c.moments, ψ)))
+        f(args...) = dot(Δ, abs2.(apply(ψ, c.moments)))
         @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
             (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
     end
@@ -84,10 +84,10 @@ end
         # fictitious gradients of cost function with respect to circuit output
         Δ = [0.3, -1.2]
 
-        grads = Flux.gradient(() -> dot(Δ, apply(c, ψ)), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+        grads = Flux.gradient(() -> dot(Δ, apply(ψ, c)), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
 
         # arguments used implicitly via references
-        f(args...) = dot(Δ, apply(c, ψ))
+        f(args...) = dot(Δ, apply(ψ, c))
         @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
             (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
     end
@@ -98,10 +98,10 @@ end
 
         ρ = density_from_statevector(ψ)
 
-        grads = Flux.gradient(() -> dot(Δ.v, apply(c.moments, ρ).v), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+        grads = Flux.gradient(() -> dot(Δ.v, apply(ρ, c.moments).v), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
         
         # arguments used implicitly via references
-        f(args...) = dot(Δ.v, apply(c.moments, ρ).v)
+        f(args...) = dot(Δ.v, apply(ρ, c.moments).v)
         @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
             (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
     end
@@ -112,10 +112,10 @@ end
         Δ = [0.3, -1.2]
         ρ = density_from_statevector(ψ)
 
-        grads = Flux.gradient(() -> dot(Δ, apply(c, ρ)), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+        grads = Flux.gradient(() -> dot(Δ, apply(ρ, c)), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
 
         # arguments used implicitly via references
-        f(args...) = dot(Δ, apply(c, ρ))
+        f(args...) = dot(Δ, apply(ρ, c))
         @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
             (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
     end

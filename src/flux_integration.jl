@@ -37,10 +37,10 @@ end
 
 
 # custom adjoint
-Zygote.@adjoint apply(moments::Vector{Moment}, ψ::Vector{<:Complex}) = begin
+Zygote.@adjoint apply(ψ::Vector{<:Complex}, moments::Vector{Moment}) = begin
     N = Qaintessent.intlog2(length(ψ))
     length(ψ) == 2^N || error("Vector length must be a power of 2")
-    ψ1 = apply(moments, ψ)
+    ψ1 = apply(ψ, moments)
     ψ1, function(Δ)
         # factor 1/2 due to convention for Wirtinger derivative with prefactor 1/2
         dmoments, ψbar = Qaintessent.backward(moments, ψ1, 0.5*Δ, N)
@@ -52,8 +52,8 @@ end
 
 
 # custom adjoint
-Zygote.@adjoint apply(c::Circuit{N}, ψ::AbstractVector) where {N} = begin
-    apply(c, ψ), function(Δ)
+Zygote.@adjoint apply(ψ::AbstractVector, c::Circuit{N}) where {N} = begin
+    apply(ψ, c), function(Δ)
         # TODO: don't recompute apply(c, ψ) here
         dc, ψbar = Qaintessent.gradients(c, ψ, Δ)
         collect_gradients(__context__, c, dc)
@@ -63,8 +63,8 @@ end
 
 
 # custom adjoint for applying moments to a density matrix
-Zygote.@adjoint apply(moments::Vector{Moment}, ρ::DensityMatrix) = begin
-    ρ1 = apply(moments, ρ)
+Zygote.@adjoint apply(ρ::DensityMatrix, moments::Vector{Moment}) = begin
+    ρ1 = apply(ρ, moments)
     ρ1, function(Δ)
         if !(Δ isa DensityMatrix)
             Δ = DensityMatrix(Δ[1], ρ.N)
@@ -77,9 +77,9 @@ end
 
 
 # custom adjoint for applying a circuit to a density matrix
-Zygote.@adjoint apply(c::Circuit{N}, ρ::DensityMatrix) where {N} = begin
+Zygote.@adjoint apply(ρ::DensityMatrix, c::Circuit{N}) where {N} = begin
     @assert(ρ.N == N)
-    apply(c, ρ), function(Δ)
+    apply(ρ, c), function(Δ)
         # TODO: don't recompute apply(c, ρ) here
         dc, ρbar = Qaintessent.gradients(c, ρ, Δ)
         collect_gradients(__context__, c, dc)
