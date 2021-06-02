@@ -46,7 +46,7 @@ Zygote.@adjoint apply(ψ::Vector{<:Complex}, moments::Vector{Moment}) = begin
         dmoments, ψbar = Qaintessent.backward(moments, ψ1, 0.5*Δ, N)
         ψbar .*= 2.0
         collect_gradients(__context__, moments, dmoments)
-        return (dmoments, ψbar)
+        return (ψbar, dmoments)
     end
 end
 
@@ -57,7 +57,7 @@ Zygote.@adjoint apply(ψ::AbstractVector, c::Circuit{N}) where {N} = begin
         # TODO: don't recompute apply(c, ψ) here
         dc, ψbar = Qaintessent.gradients(c, ψ, Δ)
         collect_gradients(__context__, c, dc)
-        return (dc, ψbar)
+        return (ψbar, dc)
     end
 end
 
@@ -71,7 +71,7 @@ Zygote.@adjoint apply(ρ::DensityMatrix, moments::Vector{Moment}) = begin
         end
         dmoments, ρbar = Qaintessent.backward_density(moments, ρ1, Δ)
         collect_gradients(__context__, moments, dmoments)
-        return (dmoments, ρbar)
+        return (ρbar, dmoments)
     end
 end
 
@@ -83,7 +83,7 @@ Zygote.@adjoint apply(ρ::DensityMatrix, c::Circuit{N}) where {N} = begin
         # TODO: don't recompute apply(c, ρ) here
         dc, ρbar = Qaintessent.gradients(c, ρ, Δ)
         collect_gradients(__context__, c, dc)
-        return (dc, ρbar)
+        return (ρbar, dc)
     end
 end
 

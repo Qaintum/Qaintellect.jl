@@ -120,4 +120,17 @@ end
             (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
     end
 
+    @testset "circuit with measurement gradients for parametric density matrices" begin
+        Δ = [0.3, -1.2]
+        latent_density(θlist) = DensityMatrix(kron([[1-cos(θ), 0, 0, cos(θ)] for θ in θlist]...), length(θlist))
+        θopt = π/2 * (1 .+ 0.5*randn(N))
+
+        grads = Flux.gradient(() -> dot(Δ, apply(latent_density(θopt), c)), Flux.Params([θopt, rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+        
+        f(args...) = dot(Δ, apply(latent_density(θopt), c))
+
+        @test all(isapprox.(ngradient(f, θopt, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+            (grads[θopt], grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+    end
+
 end
