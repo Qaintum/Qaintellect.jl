@@ -14,6 +14,10 @@ Flux.@functor CircuitGate
 Flux.@functor Moment
 Flux.@functor MeasurementOperator
 Flux.@functor Circuit
+Flux.@functor ParityRingMixerGate
+Flux.@functor RNearbyValuesMixerGate
+Flux.@functor PartitionMixerGate
+Flux.@functor MaxKColSubgraphPhaseSeparationGate
 
 
 function collect_gradients(cx::Zygote.Context, q, dq)
