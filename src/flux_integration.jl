@@ -1,3 +1,4 @@
+using Qaintessent.MaxKColSubgraphQAOA
 
 # let Flux discover the trainable parameters
 
@@ -14,6 +15,12 @@ Flux.@functor CircuitGate
 Flux.@functor Moment
 Flux.@functor MeasurementOperator
 Flux.@functor Circuit
+
+# Definitions for the Max-k-col. subgraph QAOA example
+Flux.@functor ParityRingMixerGate
+Flux.@functor RNearbyValuesMixerGate
+Flux.@functor PartitionMixerGate
+Flux.@functor MaxKColSubgraphPhaseSeparationGate
 
 
 function collect_gradients(cx::Zygote.Context, q, dq)
