@@ -71,4 +71,7 @@ export
 export
     apply
 
+# apply_density
+export
+    apply!
 end

@@ -99,11 +99,11 @@ end
         ρ = density_from_statevector(ψ)
 
         grads = Flux.gradient(() -> dot(Δ.v, apply(ρ, c.moments).v), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
-        
         # arguments used implicitly via references
         f(args...) = dot(Δ.v, apply(ρ, c.moments).v)
         @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
-            (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+            (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))    
+        
     end
 
 
@@ -118,6 +118,7 @@ end
         f(args...) = dot(Δ, apply(ρ, c))
         @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
             (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+        
     end
 
     @testset "circuit with measurement gradients for parametric density matrices" begin
@@ -131,6 +132,50 @@ end
 
         @test all(isapprox.(ngradient(f, θopt, rz.θ, ps.ϕ, ry.θ, rg.nθ),
             (grads[θopt], grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+
     end
 
+    @testset "moments chain gradients for density matrices" begin
+        # fictitious gradients of cost function with respect to output density matrix
+        Δ = DensityMatrix(0.1*randn(Float64, 256), 4)
+
+        ρ = density_from_statevector(ψ)
+
+        grads = Flux.gradient(() -> dot(Δ.v, apply!(deepcopy(ρ), c.moments).v), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+        # arguments used implicitly via references
+        f(args...) = dot(Δ.v, apply(ρ, c.moments).v)
+        @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+            (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))     
+    end
+
+    @testset "circuit with measurement gradients for density matrices" begin
+        # fictitious gradients of cost function with respect to circuit output
+        Δ = [0.3, -1.2]
+        ρ = density_from_statevector(ψ)
+
+        grads = Flux.gradient(() -> dot(Δ, apply!(deepcopy(ρ), c)), Flux.Params([rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+
+        # arguments used implicitly via references
+        f(args...) = dot(Δ, apply(ρ, c))
+        println()
+        println(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ))
+        println((grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]))
+        @test all(isapprox.(ngradient(f, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+            (grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+        
+    end
+
+    @testset "circuit with measurement gradients for parametric density matrices" begin
+        Δ = [0.3, -1.2]
+        latent_density(θlist) = DensityMatrix(kron([[1-cos(θ), 0, 0, cos(θ)] for θ in θlist]...), length(θlist))
+        θopt = π/2 * (1 .+ 0.5*randn(N))
+
+        grads = Flux.gradient(() -> dot(Δ, apply!(latent_density(θopt), c)), Flux.Params([θopt, rz.θ, ps.ϕ, ry.θ, rg.nθ]))
+        
+        f(args...) = dot(Δ, apply(latent_density(θopt), c))
+
+        @test all(isapprox.(ngradient(f, θopt, rz.θ, ps.ϕ, ry.θ, rg.nθ),
+            (grads[θopt], grads[rz.θ], grads[ps.ϕ], grads[ry.θ], grads[rg.nθ]), rtol=1e-5, atol=1e-5))
+
+    end
 end
