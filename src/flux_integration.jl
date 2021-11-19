@@ -1,3 +1,5 @@
+using Qaintessent.MaxCutWSQAOA
+using Qaintessent.MaxKColSubgraphQAOA
 
 # let Flux discover the trainable parameters
 
@@ -14,7 +16,13 @@ Flux.@functor CircuitGate
 Flux.@functor Moment
 Flux.@functor MeasurementOperator
 Flux.@functor Circuit
-
+Flux.@functor ParityRingMixerGate
+Flux.@functor RNearbyValuesMixerGate
+Flux.@functor PartitionMixerGate
+Flux.@functor MaxKColSubgraphPhaseSeparationGate
+Flux.@functor MaxCutPhaseSeparationGate
+Flux.@functor WSQAOAMixerGate (β,)
+Flux.@functor RxMixerGate
 
 function collect_gradients(cx::Zygote.Context, q, dq)
     # special cases: circuit gate chain
