@@ -75,6 +75,20 @@ Zygote.@adjoint apply(ρ::DensityMatrix, moments::Vector{Moment}) = begin
     end
 end
 
+# custom adjoint for applying moments to a density matrix
+Zygote.@adjoint apply!(ρ::DensityMatrix, moments::Vector{Moment}) = begin
+    apply!(ρ, moments)
+    ρ, function(Δ)
+        if !(Δ isa DensityMatrix)
+            Δ = DensityMatrix(Δ[1], ρ.N)
+        end
+        dmoments, ρbar = Qaintessent.backward_density(moments, ρ, Δ)
+        collect_gradients(__context__, moments, dmoments)
+        return (ρbar, dmoments)
+    end
+end
+
+
 
 # custom adjoint for applying a circuit to a density matrix
 Zygote.@adjoint apply(ρ::DensityMatrix, c::Circuit{N}) where {N} = begin
@@ -82,6 +96,17 @@ Zygote.@adjoint apply(ρ::DensityMatrix, c::Circuit{N}) where {N} = begin
     apply(ρ, c), function(Δ)
         # TODO: don't recompute apply(c, ρ) here
         dc, ρbar = Qaintessent.gradients(c, ρ, Δ)
+        collect_gradients(__context__, c, dc)
+        return (ρbar, dc)
+    end
+end
+
+# custom adjoint for applying a circuit to a density matrix
+Zygote.@adjoint apply!(ρ::DensityMatrix, c::Circuit{N}) where {N} = begin
+    @assert(ρ.N == N)
+    apply!(ρ, c), function(Δ)
+        # TODO: don't recompute apply(c, ρ) here
+        dc, ρbar = Qaintessent.gradients!(c, ρ, Δ)
         collect_gradients(__context__, c, dc)
         return (ρbar, dc)
     end
